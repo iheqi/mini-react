@@ -8,8 +8,14 @@
 import { ReactElementType } from 'shared/ReactTypes';
 import { FiberNode } from './fiber';
 import { UpdateQueue, processUpdateQueue } from './updateQueue';
-import { HostComponent, HostRoot, HostText } from './workTags';
+import {
+	FunctionComponent,
+	HostComponent,
+	HostRoot,
+	HostText
+} from './workTags';
 import { reconcileChildFibers, mountChildFibers } from './childFibers';
+import { renderWithHooks } from './fiberHooks';
 
 // 递归中的递阶段，寻找和处理子fiberNode
 export const beginWork = (wip: FiberNode) => {
@@ -22,6 +28,8 @@ export const beginWork = (wip: FiberNode) => {
 			return updateHostComponent(wip);
 		case HostText: // HostText没有beginWork工作流程（因为他没有子节点)
 			return null;
+		case FunctionComponent:
+			return updateFunctionComponent(wip);
 		default:
 			if (__DEV__) {
 				console.warn('beginWork未实现的类型');
@@ -76,4 +84,10 @@ function reconcileChildren(wip: FiberNode, children?: ReactElementType) {
 		// mount
 		wip.child = mountChildFibers(wip, null, children);
 	}
+}
+
+function updateFunctionComponent(wip: FiberNode) {
+	const nextChildren = renderWithHooks(wip); // 对于函数组件，其children为函数的执行返回结果
+	reconcileChildren(wip, nextChildren);
+	return wip.child;
 }

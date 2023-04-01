@@ -1,4 +1,4 @@
-import { Container, appChildToContainer } from 'hostConfig';
+import { Container, appendChildToContainer } from 'hostConfig';
 import { FiberNode, FiberRootNode } from './fiber';
 import { MutationMask, NoFlags, Placement } from './fiberFlags';
 import { HostComponent, HostRoot, HostText } from './workTags';
@@ -50,10 +50,12 @@ function commitPlacement(finishedWork: FiberNode) {
 
 	// parent DOM
 	const hostParent = getHostParent(finishedWork);
-	appendPlacementNodeIntoContainer(finishedWork, hostParent);
+	if (hostParent !== null) {
+		appendPlacementNodeIntoContainer(finishedWork, hostParent);
+	}
 }
 
-function getHostParent(fiber: FiberNode) {
+function getHostParent(fiber: FiberNode): Container | null {
 	let parent = fiber.return;
 
 	while (parent) {
@@ -67,6 +69,7 @@ function getHostParent(fiber: FiberNode) {
 		parent = parent.return;
 	}
 	console.error('getHostParent未找到hostParent');
+	return null;
 }
 
 function appendPlacementNodeIntoContainer(
@@ -74,7 +77,7 @@ function appendPlacementNodeIntoContainer(
 	hostParent: Container
 ) {
 	if (finishedWork.tag === HostComponent || finishedWork.tag === HostText) {
-		appChildToContainer(finishedWork.stateNode, hostParent);
+		appendChildToContainer(finishedWork.stateNode, hostParent);
 		return;
 	}
 

@@ -3,7 +3,92 @@
 // 递：对应beginWork
 // 归：对应completeWork
 
+import {
+	appendInitialChild,
+	createInstance,
+	createTextInstance
+} from 'hostConfig';
+import { FiberNode } from './fiber';
+import { HostRoot, HostComponent, HostText } from './workTags';
+import { NoFlags } from './fiberFlags';
+
 // 递归中的归阶段，寻找和处理父fiberNode
-export const completeWork = () => {
+export const completeWork = (wip: FiberNode) => {
 	// 递归中的归
+
+	const newProps = wip.pendingProps;
+	const current = wip.alternate;
+
+	switch (wip.tag) {
+		case HostComponent:
+			if (current !== null && wip.stateNode) {
+				// update
+			} else {
+				const instance = createInstance(wip.type, newProps);
+				appendAllChildren(instance, wip);
+				wip.stateNode = instance;
+			}
+			return null;
+		case HostText:
+			if (current !== null && wip.stateNode) {
+				// update
+			} else {
+				const instance = createTextInstance(newProps.content);
+				// appendAllChildren(instance, wip); // 对于 HostText，不存在 child
+				wip.stateNode = instance;
+			}
+			bubbleProperties(wip);
+			return null;
+		case HostRoot: // 根节点
+			bubbleProperties(wip);
+			return null;
+		default:
+			if (__DEV__) {
+				console.warn('completeWork未实现的类型');
+			}
+			break;
+	}
+};
+
+function appendAllChildren(parent: FiberNode, wip: FiberNode) {
+	let node = wip.child;
+	while (node !== null) {
+		if (node.tag === HostComponent || node.tag === HostText) {
+			appendInitialChild(parent, node.stateNode);
+		} else if (node.child !== null) {
+			node.child.return = node;
+			node = node.child;
+			continue;
+		}
+
+		if (node === wip) {
+			return;
+		}
+		// 向上递归
+		while (node.sibling === null) {
+			if (node.return === null || node.return === wip) {
+				return;
+			}
+			node = node.return;
+		}
+		node.sibling.return = node.return;
+		node = node.sibling;
+	}
+}
+
+// complete性能优化，在commit时，如果再深度遍历一遍fiber树来根据 flag 进行更新，会耗费性能。
+// 因此在 complete 就将子fiberNode发flags收集到父fiberNode中（类似Vue中的 patchFlag、Block）
+// 这样通过判断父 fiber 有没有 Flags 就知道子树是否需要遍历渲染
+
+const bubbleProperties = (wip: FiberNode) => {
+	let subtreeFlags = NoFlags;
+	let child = wip.child;
+	while (child !== null) {
+		subtreeFlags |= child.subtreeFlags; // 通过位运算收集
+		subtreeFlags |= child.flags;
+
+		child.return = wip;
+		child = child.sibling;
+	}
+	wip.subtreeFlags |= subtreeFlags;
 };

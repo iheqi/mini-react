@@ -46,6 +46,13 @@ function renderRoot(root: FiberRootNode) {
 			workInProgress = null;
 		}
 	} while (true);
+
+	// 完成 wip fiber 树的构建后，进行 commitRoot
+	const finishedWork = root.current.alternate;
+	root.finishedWork = finishedWork;
+
+	// wip fiberNode树，树中的Flags
+	commitRoot(root);
 }
 
 function workLoop() {

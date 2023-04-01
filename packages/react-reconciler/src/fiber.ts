@@ -22,6 +22,8 @@ export class FiberNode {
 	memoizedState: any;
 	alternate: FiberNode | null; // 双缓存树对应指针
 	flags: Flags;
+	subtreeFlags: Flags;
+
 	updateQueue: unknown;
 
 	constructor(tag: WorkTag, pendingProps: Props, key: Key) {
@@ -48,6 +50,7 @@ export class FiberNode {
 
 		// 打标签，用在后续commit（也叫副作用）
 		this.flags = NoFlags;
+		this.subtreeFlags = NoFlags;
 	}
 }
 
@@ -75,6 +78,7 @@ export const createWorkInprogress = (
 	if (wip === null) {
 		// 首次渲染
 		// mount
+		// 看图比较好理解：https://xiaochen1024.com/courseware/60b1b2f6cf10a4003b634718/60b1b340cf10a4003b63471f
 		wip = new FiberNode(current.tag, pendingProps, current.key);
 		wip.stateNode = current.stateNode;
 		wip.alternate = current;
@@ -83,6 +87,7 @@ export const createWorkInprogress = (
 		// 更新
 		wip.pendingProps = pendingProps;
 		wip.flags = NoFlags;
+		wip.subtreeFlags = NoFlags;
 	}
 	wip.type = current.type;
 	wip.updateQueue = current.updateQueue;

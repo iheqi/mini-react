@@ -28,6 +28,8 @@ export const beginWork = (wip: FiberNode) => {
 			}
 			break;
 	}
+
+	return null;
 };
 
 // HostRoot的beginWork工作流程：

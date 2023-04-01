@@ -13,4 +13,5 @@ export interface ReactElementType {
 	__mark: string;
 }
 
+// setState的参数类型，可以是一个数据，或者是函数
 export type Action<State> = State | ((prevState: State) => State);

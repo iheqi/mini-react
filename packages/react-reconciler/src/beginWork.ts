@@ -50,7 +50,7 @@ function updateHostRoot(wip: FiberNode) {
 	const pending = updateQueue.shared.pending;
 	updateQueue.shared.pending = null;
 
-	// 1.计算状态的最新值
+	// 1.计算状态的最新值（同时也是消费update）
 	const { memoizedState } = processUpdateQueue(baseState, pending);
 	wip.memoizedState = memoizedState; // 对于HostRoot，memoizedState 为 App element
 

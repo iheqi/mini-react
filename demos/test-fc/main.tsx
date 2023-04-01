@@ -1,8 +1,9 @@
-import React from 'react';
+import { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
 function App() {
-	return <span>function component 123</span>;
+	const [num] = useState(100);
+	return <span>{num}</span>;
 }
 
 const jsx = (

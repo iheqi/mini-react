@@ -5,7 +5,6 @@
 	"main": "index.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"lint": "eslint --ext .js,.ts,.jsx,.tsx --fix --quiet ./packages",
 		"build:dev": "rimraf dist && rollup --bundleConfigAsCjs --config scripts/rollup/react.config.js"
 	},
 	"keywords": [],

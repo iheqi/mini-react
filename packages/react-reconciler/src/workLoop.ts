@@ -1,14 +1,39 @@
 import { beginWork } from './beginWork';
 import { completeWork } from './completeWork';
-import { FiberNode } from './fiber';
+import { FiberNode, FiberRootNode, createWorkInprogress } from './fiber';
+import { HostRoot } from './workTags';
 
 let workInProgress: FiberNode | null = null; // 当前工作的 fiber
 
-function prepareRefreshStack(fiber: FiberNode) {
-	workInProgress = fiber;
+function prepareRefreshStack(root: FiberRootNode) {
+	workInProgress = createWorkInprogress(root.current, {});
+}
+// 调度功能
+export function scheduleUpdateOnFiber(fiber: FiberNode) {
+	// 传进来的fiber可能是子节点，需要向上寻找到 FiberRoot 再进行调度
+	// （为什么每次都要寻找，将 FiberRoot 保存为全局变量不行吗）
+	const root = markUpdateFromToRoot(fiber);
+
+	renderRoot(root);
 }
 
-function renderRoot(root: FiberNode) {
+// 寻找 FiberRoot
+function markUpdateFromToRoot(fiber: FiberNode) {
+	let node = fiber;
+	let parent = node.return;
+
+	while (parent !== null) {
+		node = parent;
+		parent = node.return;
+	}
+
+	if (node.tag === HostRoot) {
+		return node.stateNode;
+	}
+	return null;
+}
+
+function renderRoot(root: FiberRootNode) {
 	prepareRefreshStack(root);
 
 	do {

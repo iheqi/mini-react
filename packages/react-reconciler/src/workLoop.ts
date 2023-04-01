@@ -41,6 +41,7 @@ function renderRoot(root: FiberRootNode) {
 	do {
 		try {
 			workLoop();
+			break;
 		} catch (error) {
 			if (__DEV__) {
 				console.warn('workLoop发生错误', error);
@@ -103,13 +104,13 @@ function performUnitWork(fiber: FiberNode) {
 
 	if (next === null) {
 		// 如果没有子节点，则遍历兄弟节点
-		comleteUnitWork(fiber);
+		completeUnitWork(fiber);
 	} else {
 		workInProgress = next; // 有子节点，遍历子节点
 	}
 }
 
-function comleteUnitWork(fiber: FiberNode) {
+function completeUnitWork(fiber: FiberNode) {
 	let node: FiberNode | null = fiber;
 	do {
 		completeWork(node);

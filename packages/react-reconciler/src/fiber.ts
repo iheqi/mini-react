@@ -54,9 +54,12 @@ export class FiberNode {
 	}
 }
 
+// const root = ReactDOM.createRoot(document.getElementById('root'));
+// root.render(<App />);
+
 // FiberRoot <--> HostRootFiber <--> App
 export class FiberRootNode {
-	container: Container; // 挂载节点
+	container: Container; // 挂载节点。即 document.getElementById('root')
 	current: FiberNode; // hostRootFiber
 	finishedWork: FiberNode | null; // 更新完成的 hostRootFiber
 

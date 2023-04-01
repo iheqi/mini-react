@@ -57,16 +57,17 @@ export class FiberNode {
 // const root = ReactDOM.createRoot(document.getElementById('root'));
 // root.render(<App />);
 
+// 看图理解指针指向: https://xiaochen1024.com/courseware/60b1b2f6cf10a4003b634718/60b1b340cf10a4003b63471f
 // FiberRoot <--> HostRootFiber <--> App
 export class FiberRootNode {
 	container: Container; // 挂载节点。即 document.getElementById('root')
-	current: FiberNode; // hostRootFiber
+	current: FiberNode; // hostRootFiber。即 <App />
 	finishedWork: FiberNode | null; // 更新完成的 hostRootFiber
 
 	constructor(container: Container, hostRootFiber: FiberNode) {
 		this.container = container;
 		this.current = hostRootFiber;
-		hostRootFiber.stateNode = null;
+		hostRootFiber.stateNode = this;
 		this.finishedWork = null;
 	}
 }

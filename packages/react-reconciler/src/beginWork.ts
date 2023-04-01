@@ -42,9 +42,11 @@ function updateHostRoot(wip: FiberNode) {
 	const pending = updateQueue.shared.pending;
 	updateQueue.shared.pending = null;
 
+	// 1.计算状态的最新值
 	const { memoizedState } = processUpdateQueue(baseState, pending);
 	wip.memoizedState = memoizedState; // 对于HostRoot，memoizedState 为 App element
 
+	// 2.创建子fiberNode
 	const nextChildren = wip.memoizedState;
 	reconcileChildren(wip, nextChildren);
 	return wip.child; // 即<App />

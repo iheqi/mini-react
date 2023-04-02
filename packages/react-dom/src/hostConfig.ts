@@ -11,7 +11,7 @@ export type TextInstance = Text;
 
 // export const createInstance = (type: string, props: any): Instance => {
 export const createInstance = (type: string): Instance => {
-	const element = document.createElement(type) as Element;
+	const element = document.createElement(type);
 	return element;
 };
 
@@ -19,15 +19,17 @@ export const appendInitialChild = (parent: Instance, child: Instance) => {
 	parent.appendChild(child);
 };
 
+export const appendChildToContainer = appendInitialChild;
+
+// export const appendChildToContainer = (
+// 	child: Instance,
+// 	container: Container
+// ) => {
+// 	container.appendChild(child);
+// };
+
 export const createTextInstance = (content: string) => {
 	return document.createTextNode(content);
-};
-
-export const appendChildToContainer = (
-	child: Instance,
-	container: Container
-) => {
-	container.appendChild(child);
 };
 
 export function commitUpdate(fiber: FiberNode) {

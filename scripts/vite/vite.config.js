@@ -18,10 +18,12 @@ export default defineConfig({
 			{
 				find: 'react',
 				replacement: resolvePkgPath('react')
+				// replacement: '/Users/heqi/learn/lesson/big-react/packages/react'
 			},
 			{
 				find: 'react-dom',
 				replacement: resolvePkgPath('react-dom')
+				// replacement: '/Users/heqi/learn/lesson/big-react/packages/react-dom'
 			},
 			{
 				find: 'hostConfig',
@@ -29,6 +31,8 @@ export default defineConfig({
 					resolvePkgPath('react-dom'),
 					'./src/hostConfig.ts'
 				)
+				// replacement:
+				// '/Users/heqi/learn/lesson/big-react/packages/react-dom/src/hostConfig.ts'
 			}
 		]
 	}

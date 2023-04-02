@@ -32,7 +32,7 @@ export const commitMutationEffects = (finishedWork: FiberNode) => {
 		debugger;
 		if (
 			// 10.3 遗留问题2：span的subtreeFlags没有收集到flag，导致没有进一步遍历到text子节点
-			// (nextEffect.subtreeFlags & MutationMask) !== NoFlags &&
+			(nextEffect.subtreeFlags & MutationMask) !== NoFlags &&
 			child !== null
 		) {
 			nextEffect = child;
@@ -203,7 +203,7 @@ function appendPlacementNodeIntoContainer(
 	hostParent: Container
 ) {
 	if (finishedWork.tag === HostComponent || finishedWork.tag === HostText) {
-		appendChildToContainer(finishedWork.stateNode, hostParent);
+		appendChildToContainer(hostParent, finishedWork.stateNode);
 		return;
 	}
 

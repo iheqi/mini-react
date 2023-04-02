@@ -82,11 +82,11 @@ function commitRoot(root: FiberRootNode) {
 
 	// 如果没有flag，则不用更新
 	if (subtreeHasEffect || rootHasEffect) {
-		//   - beforeMutation 阶段
-		//   - mutation 阶段
+		// - beforeMutation 阶段
+		// - mutation 阶段
 		commitMutationEffects(finishedWork);
 		root.current = finishedWork; // 把workInProgress Fiber切换成current Fiber
-		//   - layout 阶段
+		// - layout 阶段
 	} else {
 		root.current = finishedWork; // 把workInProgress Fiber切换成current Fiber
 	}

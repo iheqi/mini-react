@@ -82,8 +82,7 @@ export const createWorkInprogress = (
 	let wip = current.alternate;
 
 	if (wip === null) {
-		// 首次渲染
-		// mount
+		// mount 首次渲染
 		// 看图比较好理解：https://xiaochen1024.com/courseware/60b1b2f6cf10a4003b634718/60b1b340cf10a4003b63471f
 		wip = new FiberNode(current.tag, pendingProps, current.key);
 		wip.stateNode = current.stateNode;
@@ -96,12 +95,13 @@ export const createWorkInprogress = (
 		wip.subtreeFlags = NoFlags;
 		wip.deletions = null;
 	}
+
 	wip.type = current.type;
 	wip.updateQueue = current.updateQueue;
-
 	wip.child = current.child;
 	wip.memoizedProps = current.memoizedProps;
 	wip.memoizedState = current.memoizedState;
+
 	return wip;
 };
 

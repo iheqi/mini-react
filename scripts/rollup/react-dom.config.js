@@ -16,16 +16,16 @@ const pkgDistPath = resolvePkgPath(name, true);
 // React
 
 export default [
-  // 
+  // react-dom
   {
     input: `${pkgPath}/${module}`,
     output: [{
       file: `${pkgDistPath}/index.js`,
-      name: 'index.js',
+      name: 'ReactDOM',
       format: 'umd'
     }, {
       file: `${pkgDistPath}/client.js`, // react18的引入方式：import ReactDOM from 'react-dom/client';
-      name: 'client.js',
+      name: 'client',
       format: 'umd'
     }],
     // 避免 react 代码打包进 react-dom
@@ -50,6 +50,19 @@ export default [
           main: 'index.js'
         })
       })
+    ]
+  },
+  // react-dom: test-utils
+  {
+    input: `${pkgPath}/test-utils.ts`,
+    output: [{
+      file: `${pkgDistPath}/test-utils.js`,
+      name: 'testUtils',
+      format: 'umd'
+    }],
+    external: ['react', 'react-dom'],
+    plugins: [
+      ...getBaseRollupPlugins(),
     ]
   }
 ]

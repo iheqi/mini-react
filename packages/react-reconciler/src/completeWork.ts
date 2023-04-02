@@ -72,11 +72,13 @@ function appendAllChildren(parent: Container, wip: FiberNode) {
 		if (node.tag === HostComponent || node.tag === HostText) {
 			appendInitialChild(parent, node.stateNode);
 		} else if (node.child !== null) {
+			// 向下遍历
 			node.child.return = node;
 			node = node.child;
 			continue;
 		}
 
+		// 终止条件，从下到上完了
 		if (node === wip) {
 			return;
 		}

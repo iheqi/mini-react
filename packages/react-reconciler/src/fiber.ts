@@ -25,6 +25,7 @@ export class FiberNode {
 	subtreeFlags: Flags;
 
 	updateQueue: unknown;
+	deletions: FiberNode[] | null; // 要删除的子fiber
 
 	constructor(tag: WorkTag, pendingProps: Props, key: Key) {
 		this.tag = tag;
@@ -51,6 +52,7 @@ export class FiberNode {
 		// 打标签，用在后续commit（也叫副作用）
 		this.flags = NoFlags;
 		this.subtreeFlags = NoFlags;
+		this.deletions = null;
 	}
 }
 
@@ -88,10 +90,11 @@ export const createWorkInprogress = (
 		wip.alternate = current;
 		current.alternate = wip;
 	} else {
-		// 更新
+		// 更新时，先把之前的数据重置
 		wip.pendingProps = pendingProps;
 		wip.flags = NoFlags;
 		wip.subtreeFlags = NoFlags;
+		wip.deletions = null;
 	}
 	wip.type = current.type;
 	wip.updateQueue = current.updateQueue;

@@ -43,6 +43,7 @@ function commitMutationEffectsOnFiber(finishedWork: FiberNode) {
 	}
 }
 
+// 以下代码开始真正操作DOM树
 function commitPlacement(finishedWork: FiberNode) {
 	if (__DEV__) {
 		console.log('执行Placement操作', finishedWork);

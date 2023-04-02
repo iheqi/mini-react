@@ -74,7 +74,9 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 
 	// 打上 Placement 标记
 	function placeSingleChild(fiber: FiberNode) {
-		if (shouldTrackEffects && fiber.alternate === null) {
+		// 10.3 遗留问题1：没有收集到flag
+		// if (shouldTrackEffects && fiber.alternate === null) {
+		if (shouldTrackEffects) {
 			fiber.flags |= Placement;
 		}
 		return fiber;
@@ -118,6 +120,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 
 		// HostText
 		if (typeof newChild === 'string' || typeof newChild === 'number') {
+			debugger;
 			return placeSingleChild(
 				reconcileSingleTextNode(returnFiber, currentFiber, newChild)
 			);

@@ -33,6 +33,17 @@ const ReactElement = function (
 //   return _jsx('h1', { children: 'Hello world' });
 // }
 
+// maybeChildren参数示例：
+// const a = 1;
+// const element = React.createElement(
+// 	ComponentFC,
+// 	{
+// 		children: 'text'
+// 	},
+// 	a
+// );
+// expect(element.props.children).toBe(a);
+
 export const jsx = (type: ElementType, config: any, ...maybeChildren: any) => {
 	const props: Props = {};
 	let key: Key = null; // 保存key、ref这两个特殊对象
@@ -61,9 +72,10 @@ export const jsx = (type: ElementType, config: any, ...maybeChildren: any) => {
 	const maybeChildrenLength = maybeChildren.length;
 	if (maybeChildrenLength) {
 		if (maybeChildrenLength === 1) {
+			// 如果第二个参数后只传入了一个参数，children为该对象
 			props.children = maybeChildren[0];
 		} else {
-			props.children = maybeChildren;
+			props.children = maybeChildren; // 如后面有多个参数，children为数组
 		}
 	}
 	return ReactElement(type, key, ref, props);
@@ -96,3 +108,11 @@ export const jsxDEV = (type: ElementType, config: any) => {
 
 	return ReactElement(type, key, ref, props);
 };
+
+export function isValidElement(object: any) {
+	return (
+		typeof object === 'object' &&
+		object !== null &&
+		object.$$typeof === REACT_ELEMENT_TYPE
+	);
+}

@@ -73,5 +73,5 @@ export const processUpdateQueue = <State>(
 		}
 	}
 
-	return result;
+	return result; // 返回新state结果对象
 };

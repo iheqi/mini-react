@@ -73,7 +73,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 	}
 
 	// 打上 Placement 标记
-	function placeSingeChild(fiber: FiberNode) {
+	function placeSingleChild(fiber: FiberNode) {
 		if (shouldTrackEffects && fiber.alternate === null) {
 			fiber.flags |= Placement;
 		}
@@ -105,7 +105,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 		if (typeof newChild === 'object' && newChild !== null) {
 			switch (newChild.$$typeof) {
 				case REACT_ELEMENT_TYPE:
-					return placeSingeChild(
+					return placeSingleChild(
 						reconcileSingleElement(returnFiber, currentFiber, newChild)
 					);
 				default:
@@ -118,7 +118,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 
 		// HostText
 		if (typeof newChild === 'string' || typeof newChild === 'number') {
-			return placeSingeChild(
+			return placeSingleChild(
 				reconcileSingleTextNode(returnFiber, currentFiber, newChild)
 			);
 		}

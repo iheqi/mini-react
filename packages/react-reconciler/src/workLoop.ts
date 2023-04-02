@@ -80,6 +80,7 @@ function commitRoot(root: FiberRootNode) {
 		(finishedWork.subtreeFlags & MutationMask) !== NoFlags;
 	const rootHasEffect = (finishedWork.flags & MutationMask) !== NoFlags;
 
+	// 如果没有flag，则不用更新
 	if (subtreeHasEffect || rootHasEffect) {
 		//   - beforeMutation 阶段
 		//   - mutation 阶段

@@ -29,7 +29,7 @@ export const commitMutationEffects = (finishedWork: FiberNode) => {
 	while (nextEffect !== null) {
 		// 向下遍历
 		const child: FiberNode | null = nextEffect.child;
-
+		debugger;
 		if (
 			(nextEffect.subtreeFlags & MutationMask) !== NoFlags &&
 			child !== null

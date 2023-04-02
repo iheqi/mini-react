@@ -100,7 +100,7 @@ export const createWorkInprogress = (
 	wip.updateQueue = current.updateQueue;
 
 	wip.child = current.child;
-	wip.memoizedProps = current.pendingProps;
+	wip.memoizedProps = current.memoizedProps;
 	wip.memoizedState = current.memoizedState;
 	return wip;
 };

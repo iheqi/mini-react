@@ -1,4 +1,4 @@
-import internals from 'shared/internal';
+import internals from 'shared/internals';
 import { FiberNode } from './fiber';
 import { Dispatcher } from 'react/src/currentDispatcher';
 import { Dispatch } from 'react/src/currentDispatcher';

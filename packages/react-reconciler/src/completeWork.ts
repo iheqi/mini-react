@@ -5,20 +5,20 @@
 // 都是DFS中的流程，做的事情都差不多，为什么还分上下啊。。。
 
 import {
-	Container,
 	appendInitialChild,
+	Container,
 	createInstance,
 	createTextInstance
 } from 'hostConfig';
+import { updateFiberProps } from 'react-dom/src/SyntheticEvent';
 import { FiberNode } from './fiber';
+import { NoFlags, Update } from './fiberFlags';
 import {
 	HostRoot,
-	HostComponent,
 	HostText,
+	HostComponent,
 	FunctionComponent
 } from './workTags';
-import { NoFlags, Update } from './fiberFlags';
-import { updateFiberProps } from 'react-dom/src/SyntheticEvent';
 
 // 递归中的归阶段，寻找和处理父fiberNode
 export const completeWork = (wip: FiberNode) => {
@@ -41,6 +41,7 @@ export const completeWork = (wip: FiberNode) => {
 				appendAllChildren(instance, wip);
 				wip.stateNode = instance;
 			}
+			bubbleProperties(wip);
 			return null;
 		case HostText:
 			if (current !== null && wip.stateNode) {

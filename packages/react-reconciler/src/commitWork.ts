@@ -29,7 +29,6 @@ export const commitMutationEffects = (finishedWork: FiberNode) => {
 	while (nextEffect !== null) {
 		// 向下遍历
 		const child: FiberNode | null = nextEffect.child;
-		debugger;
 		if (
 			// 10.3 遗留问题2：span的subtreeFlags没有收集到flag，导致没有进一步遍历到text子节点
 			(nextEffect.subtreeFlags & MutationMask) !== NoFlags &&

@@ -18,6 +18,7 @@ import {
 	FunctionComponent
 } from './workTags';
 import { NoFlags, Update } from './fiberFlags';
+import { updateFiberProps } from 'react-dom/src/SyntheticEvent';
 
 // 递归中的归阶段，寻找和处理父fiberNode
 export const completeWork = (wip: FiberNode) => {
@@ -30,9 +31,13 @@ export const completeWork = (wip: FiberNode) => {
 		case HostComponent:
 			if (current !== null && wip.stateNode) {
 				// update
+				// 1. props是否变化 {onClick: xx} {onClick: xxx}
+				// 2. 变了 Update flag
+				// className style
+				updateFiberProps(wip.stateNode, newProps);
 			} else {
 				// const instance = createInstance(wip.type, newProps);
-				const instance = createInstance(wip.type); // 创建DOM
+				const instance = createInstance(wip.type, newProps); // 创建DOM
 				appendAllChildren(instance, wip);
 				wip.stateNode = instance;
 			}

@@ -16,6 +16,7 @@ import { Action } from 'shared/ReactTypes';
 
 export interface Update<State> {
 	action: Action<State>;
+	next: Update<any> | null; // update可能有多个，用链表的形式链接
 }
 
 export interface UpdateQueue<State> {
@@ -42,11 +43,22 @@ export const createUpdateQueue = <State>() => {
 };
 
 // 插入队列
-
 export const enqueueUpdate = <State>(
 	updateQueue: UpdateQueue<State>,
 	update: Update<State>
 ) => {
+	const pending = updateQueue.shared.pending;
+
+	// 这样搞成环状链表，搞毛啊
+	// pending = a -> a
+	// pending = b -> a -> b
+	// pending = c -> a -> b -> c
+	if (pending === null) {
+		update.next = update;
+	} else {
+		update.next = pending.next;
+		pending.next = update;
+	}
 	updateQueue.shared.pending = update;
 };
 

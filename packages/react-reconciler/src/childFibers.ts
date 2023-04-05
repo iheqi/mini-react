@@ -157,7 +157,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 			}
 
 			// 3. 标记移动还是插入
-			newFiber.index = 1;
+			newFiber.index = i;
 			newFiber.return = returnFiber;
 
 			if (lastNewFiber === null) {
@@ -203,20 +203,18 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 		index: number,
 		element: any
 	): FiberNode | null {
-		const keyToUse = element.key !== null ? element.key : element.index;
+		const keyToUse = element.key !== null ? element.key : index;
 		const before = existingChildren.get(keyToUse);
 
 		// HostText
 		if (typeof element === 'string' || typeof element === 'number') {
 			if (before) {
-				if (before) {
-					if (before.tag === HostText) {
-						existingChildren.delete(keyToUse);
-						return useFiber(before, { content: element + '' });
-					}
+				if (before.tag === HostText) {
+					existingChildren.delete(keyToUse);
+					return useFiber(before, { content: element + '' });
 				}
-				return new FiberNode(HostText, { content: element + '' }, null);
 			}
+			return new FiberNode(HostText, { content: element + '' }, null);
 		}
 
 		// ReactElement
@@ -232,7 +230,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 					return createFiberFromElement(element);
 			}
 
-			// TODO 数组类型，孙子节点也是数组
+			// TODO 数组类型
 			if (Array.isArray(element) && __DEV__) {
 				console.warn('还未实现数组类型的child');
 			}

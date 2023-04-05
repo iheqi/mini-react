@@ -1,7 +1,12 @@
 // packages/react-reconciler/src/ReactFiber.new.js
 
 import { Props, Key, Ref, ReactElementType } from 'shared/ReactTypes';
-import { FunctionComponent, HostComponent, WorkTag } from './workTags';
+import {
+	FunctionComponent,
+	HostComponent,
+	Fragment,
+	WorkTag
+} from './workTags';
 import { Flags, NoFlags } from './fiberFlags';
 import { Container } from 'hostConfig';
 
@@ -29,9 +34,9 @@ export class FiberNode {
 
 	constructor(tag: WorkTag, pendingProps: Props, key: Key) {
 		this.tag = tag;
-		this.key = key;
+		this.key = key || null;
 		this.stateNode = null; // dom
-		this.type = null;
+		this.type = null; // fiber.type 会被赋值为 element.type;
 
 		// 构成树状结构
 		this.return = null;
@@ -75,7 +80,7 @@ export class FiberRootNode {
 }
 
 // 双缓存树：current Fiber 与 workInProgress Fiber
-export const createWorkInprogress = (
+export const createWorkInProgress = (
 	current: FiberNode,
 	pendingProps: Props
 ): FiberNode => {
@@ -108,7 +113,7 @@ export const createWorkInprogress = (
 export function createFiberFromElement(element: ReactElementType) {
 	const { type, key, props } = element;
 	let fiberTag: WorkTag = FunctionComponent;
-
+	debugger;
 	if (typeof type === 'string') {
 		fiberTag = HostComponent;
 	} else if (typeof type !== 'function') {
@@ -118,5 +123,10 @@ export function createFiberFromElement(element: ReactElementType) {
 	const fiber = new FiberNode(fiberTag, props, key);
 	fiber.type = type;
 
+	return fiber;
+}
+
+export function createFiberFromFragment(elements: any[], key: Key): FiberNode {
+	const fiber = new FiberNode(Fragment, elements, key);
 	return fiber;
 }

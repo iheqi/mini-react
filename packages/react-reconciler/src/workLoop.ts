@@ -1,14 +1,14 @@
 import { beginWork } from './beginWork';
 import { commitMutationEffects } from './commitWork';
 import { completeWork } from './completeWork';
-import { FiberNode, FiberRootNode, createWorkInprogress } from './fiber';
+import { FiberNode, FiberRootNode, createWorkInProgress } from './fiber';
 import { MutationMask, NoFlags } from './fiberFlags';
 import { HostRoot } from './workTags';
 
 let workInProgress: FiberNode | null = null; // 当前工作的 fiber
 
 function prepareRefreshStack(root: FiberRootNode) {
-	workInProgress = createWorkInprogress(root.current, {});
+	workInProgress = createWorkInProgress(root.current, {});
 }
 // 调度功能
 export function scheduleUpdateOnFiber(fiber: FiberNode) {

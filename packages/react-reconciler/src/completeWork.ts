@@ -1,7 +1,7 @@
 // Fiber树的构建是深度优先遍历。
 // 这是个递归的过程，存在递、归两个阶段：
-// 递：对应beginWork，主要的工作是创建或复用子fiber节点
-// 归：对应completeWork，主要工作是处理fiber的props、创建dom、创建effectList
+// 递：对应beginWork，主要的工作是创建或复用子fiber节点（reconcileChildren、Diff），以及打flag
+// 归：对应completeWork，主要工作是更新fiber的props、创建dom、收集flag
 // 都是DFS中的流程，做的事情都差不多，为什么还分上下啊。。。
 
 import {
@@ -17,7 +17,8 @@ import {
 	HostRoot,
 	HostText,
 	HostComponent,
-	FunctionComponent
+	FunctionComponent,
+	Fragment
 } from './workTags';
 
 // 递归中的归阶段，寻找和处理父fiberNode
@@ -59,9 +60,8 @@ export const completeWork = (wip: FiberNode) => {
 			bubbleProperties(wip);
 			return null;
 		case HostRoot: // 根节点
-			bubbleProperties(wip);
-			return null;
 		case FunctionComponent:
+		case Fragment:
 			bubbleProperties(wip);
 			return null;
 		default:

@@ -12,7 +12,8 @@ import {
 	FunctionComponent,
 	HostComponent,
 	HostRoot,
-	HostText
+	HostText,
+	Fragment
 } from './workTags';
 import { reconcileChildFibers, mountChildFibers } from './childFibers';
 import { renderWithHooks } from './fiberHooks';
@@ -30,6 +31,8 @@ export const beginWork = (wip: FiberNode) => {
 			return null;
 		case FunctionComponent:
 			return updateFunctionComponent(wip);
+		case Fragment:
+			return updateFragment(wip);
 		default:
 			if (__DEV__) {
 				console.warn('beginWork未实现的类型');
@@ -72,6 +75,19 @@ function updateHostComponent(wip: FiberNode) {
 	return wip.child;
 }
 
+function updateFunctionComponent(wip: FiberNode) {
+	const nextChildren = renderWithHooks(wip); // 对于函数组件，其children为函数的执行返回结果
+	reconcileChildren(wip, nextChildren);
+	return wip.child;
+}
+
+function updateFragment(wip: FiberNode) {
+	// 对于fragment组件
+	const nextChildren = wip.pendingProps;
+	reconcileChildren(wip, nextChildren);
+	return wip.child;
+}
+
 // 就是diff current 和 新element 后打 flag 标签，后续 commit 时要依据 flag 来操作dom
 // 并且生成对应 wip fiberNode.
 function reconcileChildren(wip: FiberNode, children?: ReactElementType) {
@@ -84,10 +100,4 @@ function reconcileChildren(wip: FiberNode, children?: ReactElementType) {
 		// mount
 		wip.child = mountChildFibers(wip, null, children);
 	}
-}
-
-function updateFunctionComponent(wip: FiberNode) {
-	const nextChildren = renderWithHooks(wip); // 对于函数组件，其children为函数的执行返回结果
-	reconcileChildren(wip, nextChildren);
-	return wip.child;
 }

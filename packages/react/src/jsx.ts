@@ -1,4 +1,4 @@
-import { REACT_ELEMENT_TYPE } from 'shared/ReactSymbols';
+import { REACT_ELEMENT_TYPE, REACT_FRAGMENT_TYPE } from 'shared/ReactSymbols';
 import {
 	Type,
 	Key,
@@ -15,8 +15,8 @@ const ReactElement = function (
 	props: Props
 ): ReactElementType {
 	const element = {
-		$$typeof: REACT_ELEMENT_TYPE,
-		type,
+		$$typeof: REACT_ELEMENT_TYPE, // React层面的组件的类型
+		type, // jsx element 的 type 如 'div', function App。可以理解为 $$typeof 的细分
 		key,
 		ref,
 		props,
@@ -49,6 +49,7 @@ export const jsx = (type: ElementType, config: any, ...maybeChildren: any) => {
 	let key: Key = null; // 保存key、ref这两个特殊对象
 	let ref: Ref = null;
 
+	debugger;
 	for (const prop in config) {
 		const val = config[prop];
 		if (prop === 'key') {
@@ -81,10 +82,13 @@ export const jsx = (type: ElementType, config: any, ...maybeChildren: any) => {
 	return ReactElement(type, key, ref, props);
 };
 
+export const Fragment = REACT_FRAGMENT_TYPE;
+
 export const jsxDEV = (type: ElementType, config: any) => {
 	const props: Props = {};
 	let key: Key = null; // 保存key、ref这两个特殊对象
 	let ref: Ref = null;
+	debugger;
 
 	for (const prop in config) {
 		const val = config[prop];

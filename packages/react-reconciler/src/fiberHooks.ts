@@ -99,7 +99,7 @@ function dispatchSetState<State>(
 	const lane = requestUpdateLanes();
 	const update = createUpdate(action, lane);
 	enqueueUpdate(updateQueue, update); // 插入action
-	scheduleUpdateOnFiber(fiber, lane);
+	scheduleUpdateOnFiber(fiber, lane); // 开始render和commit
 }
 
 // 创建hook，并将 hook 链表保存在 fiber 中

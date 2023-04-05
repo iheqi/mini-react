@@ -68,3 +68,12 @@ export function insertChildToContainer(
 ) {
 	container.insertBefore(child, before);
 }
+
+// queueMicrotask: https://developer.mozilla.org/zh-CN/docs/Web/API/HTML_DOM_API/Microtask_guide
+// 还有这么一个API
+export const scheduleMicroTask =
+	typeof queueMicrotask === 'function'
+		? queueMicrotask
+		: typeof Promise === 'function'
+		? (callback: (...args: any) => void) => Promise.resolve().then(callback)
+		: setTimeout;

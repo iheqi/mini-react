@@ -1,9 +1,17 @@
+import { scheduleMicroTask } from 'hostConfig';
 import { beginWork } from './beginWork';
 import { commitMutationEffects } from './commitWork';
 import { completeWork } from './completeWork';
 import { FiberNode, FiberRootNode, createWorkInProgress } from './fiber';
 import { MutationMask, NoFlags } from './fiberFlags';
-import { Lane, mergeLanes } from './fiberLanes';
+import {
+	Lane,
+	NoLane,
+	SyncLane,
+	getHighestPriorityLane,
+	mergeLanes
+} from './fiberLanes';
+import { addScheduleSyncCallback, flushSyncCallbacks } from './syncTaskQueue';
 import { HostRoot } from './workTags';
 
 let workInProgress: FiberNode | null = null; // 当前工作的 fiber
@@ -11,15 +19,42 @@ let workInProgress: FiberNode | null = null; // 当前工作的 fiber
 function prepareRefreshStack(root: FiberRootNode) {
 	workInProgress = createWorkInProgress(root.current, {});
 }
+
 // 调度功能
+// 有update操作就会调用 scheduleUpdateOnFiber，开启render和commit，即使没有DOM的更改。（太搞笑了）
 export function scheduleUpdateOnFiber(fiber: FiberNode, lane: Lane) {
 	// 传进来的fiber可能是子节点，需要向上寻找到 FiberRoot 再进行调度
 	// （为什么每次都要寻找，将 FiberRoot 保存为全局变量不行吗）
 	const root = markUpdateFromToRoot(fiber);
 	markRootUpdate(root, lane);
-	renderRoot(root);
+
+	// renderRoot(root); // 之前是同步执行，改为按优先级调度执行
+	ensureRootIsScheduled(root);
 }
 
+function ensureRootIsScheduled(root: FiberRootNode) {
+	// 这里只调度了优先级最高的lane，那后续lane如何再继续执行？
+	// renderRoot会继续调用 ensureRootIsScheduled
+	const updateLane = getHighestPriorityLane(root.pendingLanes);
+
+	if (updateLane === NoLane) {
+		return;
+	}
+	if (updateLane === SyncLane) {
+		// 同步优先级，用微任务调度。。。
+
+		if (__DEV__) {
+			console.log('在微任务中调度，优先级:', updateLane);
+		}
+
+		addScheduleSyncCallback(renderRoot.bind(null, root, updateLane));
+		scheduleMicroTask(flushSyncCallbacks);
+	} else {
+		// 其他优先级，用宏任务调用
+	}
+}
+
+// 记录Lane
 function markRootUpdate(root: FiberRootNode, lane: Lane) {
 	root.pendingLanes = mergeLanes(root.pendingLanes, lane);
 }
@@ -40,7 +75,19 @@ function markUpdateFromToRoot(fiber: FiberNode) {
 	return null;
 }
 
+// render阶段
 function renderRoot(root: FiberRootNode) {
+	// 这里说ensureRootIsScheduled只调度了优先级最高的lane，那后续lane如何再继续执行？
+	// renderRoot会继续调用 ensureRootIsScheduled（那这逻辑也应该放到最后啊。。。不然当前微任务都还没执行，说的啥玩意啊）
+	const nextLane = getHighestPriorityLane(root.pendingLanes);
+
+	if (nextLane !== SyncLane) {
+		// 其他比SyncLane低的优先级
+		ensureRootIsScheduled(root);
+		return;
+	}
+
+	// 初始化
 	prepareRefreshStack(root);
 
 	do {
@@ -60,6 +107,7 @@ function renderRoot(root: FiberRootNode) {
 	root.finishedWork = finishedWork;
 
 	// wip fiberNode树，树中的Flags
+	// commit阶段
 	commitRoot(root);
 }
 
@@ -104,12 +152,12 @@ function workLoop() {
 }
 
 function performUnitWork(fiber: FiberNode) {
-	const next = beginWork(fiber); // 返回 子fiber 或 null（没有子节点了）
+	const next = beginWork(fiber); // beginWork: 返回 子fiber 或 null（没有子节点了）
 
 	fiber.memoizedProps = fiber.pendingProps;
 
 	if (next === null) {
-		// 如果没有子节点，则遍历兄弟节点
+		// completeWork: 如果没有子节点，则遍历兄弟节点和父节点
 		completeUnitWork(fiber);
 	} else {
 		workInProgress = next; // 有子节点，遍历子节点

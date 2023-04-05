@@ -13,9 +13,11 @@
 
 import { Dispatch } from 'react/src/currentDispatcher';
 import { Action } from 'shared/ReactTypes';
+import { Lane } from './fiberLanes';
 
 export interface Update<State> {
 	action: Action<State>;
+	lane: Lane;
 	next: Update<any> | null; // update可能有多个，用链表的形式链接
 }
 
@@ -27,9 +29,14 @@ export interface UpdateQueue<State> {
 }
 
 // 创建
-export const createUpdate = <State>(action: Action<State>) => {
+export const createUpdate = <State>(
+	action: Action<State>,
+	lane: Lane
+): Update<State> => {
 	return {
-		action
+		action,
+		lane,
+		next: null
 	};
 };
 
@@ -62,7 +69,7 @@ export const enqueueUpdate = <State>(
 	updateQueue.shared.pending = update;
 };
 
-// 消费
+// 消费Update
 export const processUpdateQueue = <State>(
 	baseState: State,
 	pendingUpdate: Update<State> | null // 待消费的 update

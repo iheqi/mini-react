@@ -3,6 +3,7 @@ import { commitMutationEffects } from './commitWork';
 import { completeWork } from './completeWork';
 import { FiberNode, FiberRootNode, createWorkInProgress } from './fiber';
 import { MutationMask, NoFlags } from './fiberFlags';
+import { Lane, mergeLanes } from './fiberLanes';
 import { HostRoot } from './workTags';
 
 let workInProgress: FiberNode | null = null; // 当前工作的 fiber
@@ -11,12 +12,16 @@ function prepareRefreshStack(root: FiberRootNode) {
 	workInProgress = createWorkInProgress(root.current, {});
 }
 // 调度功能
-export function scheduleUpdateOnFiber(fiber: FiberNode) {
+export function scheduleUpdateOnFiber(fiber: FiberNode, lane: Lane) {
 	// 传进来的fiber可能是子节点，需要向上寻找到 FiberRoot 再进行调度
 	// （为什么每次都要寻找，将 FiberRoot 保存为全局变量不行吗）
 	const root = markUpdateFromToRoot(fiber);
-
+	markRootUpdate(root, lane);
 	renderRoot(root);
+}
+
+function markRootUpdate(root: FiberRootNode, lane: Lane) {
+	root.pendingLanes = mergeLanes(root.pendingLanes, lane);
 }
 
 // 寻找 FiberRoot

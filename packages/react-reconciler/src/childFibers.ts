@@ -324,9 +324,9 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 	};
 }
 
-// 复用fiber，createWorkInprogress其实就是复用其alternate
+// 复用fiber，createWorkInProgress其实就是复用其alternate
 function useFiber(fiber: FiberNode, pendingProps: Props): FiberNode {
-	const clone = createWorkInprogress(fiber, pendingProps);
+	const clone = createWorkInProgress(fiber, pendingProps);
 	clone.index = 0;
 	clone.sibling = null;
 	return clone;

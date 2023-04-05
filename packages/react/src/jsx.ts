@@ -49,7 +49,6 @@ export const jsx = (type: ElementType, config: any, ...maybeChildren: any) => {
 	let key: Key = null; // 保存key、ref这两个特殊对象
 	let ref: Ref = null;
 
-	debugger;
 	for (const prop in config) {
 		const val = config[prop];
 		if (prop === 'key') {
@@ -88,8 +87,6 @@ export const jsxDEV = (type: ElementType, config: any) => {
 	const props: Props = {};
 	let key: Key = null; // 保存key、ref这两个特殊对象
 	let ref: Ref = null;
-	debugger;
-
 	for (const prop in config) {
 		const val = config[prop];
 		if (prop === 'key') {

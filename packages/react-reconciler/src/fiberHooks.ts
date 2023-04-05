@@ -11,6 +11,7 @@ import {
 } from './updateQueue';
 import { Action } from 'shared/ReactTypes';
 import { scheduleUpdateOnFiber } from './workLoop';
+import { requestUpdateLanes } from './fiberLanes';
 
 const { currentDispatcher } = internals;
 
@@ -95,9 +96,10 @@ function dispatchSetState<State>(
 	updateQueue: UpdateQueue<State>,
 	action: Action<State>
 ) {
-	const update = createUpdate(action);
+	const lane = requestUpdateLanes();
+	const update = createUpdate(action, lane);
 	enqueueUpdate(updateQueue, update); // 插入action
-	scheduleUpdateOnFiber(fiber);
+	scheduleUpdateOnFiber(fiber, lane);
 }
 
 // 创建hook，并将 hook 链表保存在 fiber 中

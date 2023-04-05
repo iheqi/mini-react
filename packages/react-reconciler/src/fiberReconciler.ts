@@ -9,6 +9,7 @@ import {
 } from './updateQueue';
 import { ReactElementType } from 'shared/ReactTypes';
 import { scheduleUpdateOnFiber } from './workLoop';
+import { requestUpdateLanes } from './fiberLanes';
 
 // const root = ReactDOM.createRoot(document.getElementById('root'));
 // root.render(<App />);
@@ -29,14 +30,16 @@ export function updateContainer(
 	const hostRootFiber = root.current;
 
 	// 接入更新机制
-	const update = createUpdate<ReactElementType | null>(element);
+	const lane = requestUpdateLanes();
+
+	const update = createUpdate<ReactElementType | null>(element, lane);
 	enqueueUpdate(
 		hostRootFiber.updateQueue as UpdateQueue<ReactElementType | null>,
 		update
 	);
 
 	// 调度消费update
-	scheduleUpdateOnFiber(hostRootFiber);
+	scheduleUpdateOnFiber(hostRootFiber, lane);
 
 	return element;
 }

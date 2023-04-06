@@ -3,6 +3,7 @@ import { Action } from 'shared/ReactTypes';
 // hooks集合定义，有多种hooks集合
 export interface Dispatcher {
 	useState: <T>(initialState: () => T | T) => [T, Dispatch<T>];
+	useEffect: (callback: () => void | void, deps: any[] | void) => void;
 }
 
 // setState定义

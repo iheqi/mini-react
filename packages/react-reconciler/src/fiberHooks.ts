@@ -12,16 +12,35 @@ import {
 import { Action } from 'shared/ReactTypes';
 import { scheduleUpdateOnFiber } from './workLoop';
 import { Lane, NoLane, requestUpdateLanes } from './fiberLanes';
+import { Flags, PassiveEffect } from './fiberFlags';
+import { HookHasEffect, Passive } from './hookEffectTags';
 
 const { currentDispatcher } = internals;
 
 // Hook数据结构定义
 interface Hook {
-	// 这里要注意 fiberNode 上也有一个 memorizedState 字段是保存fiber相关状态的
-	// 而这个是保存hook数据的
+	// 这里要注意 fiberNode 上也有一个 memorizedState 字段是保存fiber相关状态的（Hook链表）
+	// 而这个是保存hook数据的(state、或effect)
 	memorizedState: any;
 	updateQueue: unknown; // setState更新时使用
 	next: Hook | null; // 链表指针
+}
+
+type EffectCallback = () => void;
+type EffectDeps = any[] | null;
+
+// 回调函数
+export interface Effect {
+	tag: Flags; // hookEffectTag
+	create: EffectCallback | void;
+	destroy: EffectCallback | void;
+	deps: EffectDeps; // 依赖数组
+	// mountWorkInProgressHook已经会链接hook了，但这里是将effect的hook里的effect单独也链接成effect链表，方便遍历effect
+	next: Effect | null;
+}
+
+export interface FCUpdateQueue<State> extends UpdateQueue<State> {
+	lastEffect: Effect | null;
 }
 
 // hook自身数据保存在当前 workInprogress fiberNode
@@ -65,7 +84,8 @@ export function renderWithHooks(wip: FiberNode, lane: Lane) {
 //**** Mount 时 Hooks集合  ****/
 //**** Mount 时 Hooks集合  ****/
 const HooksDispatcherOnMount: Dispatcher = {
-	useState: mountState
+	useState: mountState,
+	useEffect: mountEffect
 };
 
 function mountState<State>(
@@ -91,6 +111,73 @@ function mountState<State>(
 	const dispatch = dispatchSetState.bind(null, currentlyRenderingFiber, queue);
 	queue.dispatch = dispatch; // 保存 dispatch
 	return [memoizedState, dispatch];
+}
+
+function mountEffect<State>(
+	create: EffectCallback | void,
+	deps: EffectDeps | void
+) {
+	// 找到当前useState对应的Hook数据, mount时则是创建hook数据
+	const hook = mountWorkInProgressHook();
+
+	const nextDeps = deps === undefined ? null : deps;
+
+	(currentlyRenderingFiber as FiberNode).flags |= PassiveEffect;
+
+	hook.memorizedState = pushEffect(
+		Passive | HookHasEffect,
+		create,
+		undefined, // mount时没有destroy
+		nextDeps
+	);
+}
+
+// mountWorkInProgressHook已经会链接hook了，但这里是将effect的hook单独也链接成effect链表，方便遍历effect
+function pushEffect(
+	hookFlags: Flags,
+	create: EffectCallback | void,
+	destroy: EffectCallback | void,
+	deps: EffectDeps
+): Effect {
+	const effect: Effect = {
+		tag: hookFlags,
+		create,
+		destroy,
+		deps,
+		next: null
+	};
+
+	// hook链表存储在fiber.memorizedState，effect链表存储在fiber.updateQueue.lastEffect
+	// 怎么感觉扩展得很混乱
+	const fiber = currentlyRenderingFiber as FiberNode;
+	const updateQueue = fiber.updateQueue as FCUpdateQueue<any>;
+
+	if (updateQueue === null) {
+		const updateQueue = createFCUpdateQueue();
+		fiber.updateQueue = updateQueue;
+
+		effect.next = effect;
+		updateQueue.lastEffect = effect; // 保存effect链表到fiber.updateQueue.lastEffect
+	} else {
+		// 插入effect
+		const lastEffect = updateQueue.lastEffect;
+		if (lastEffect === null) {
+			effect.next = effect;
+			updateQueue.lastEffect = effect;
+		} else {
+			const firstEffect = lastEffect.next;
+			lastEffect.next = effect;
+			effect.next = firstEffect;
+			updateQueue.lastEffect = effect;
+		}
+	}
+	return effect;
+}
+
+function createFCUpdateQueue<State>() {
+	const updateQueue = createUpdateQueue<State>() as FCUpdateQueue<State>;
+	updateQueue.lastEffect = null;
+	return updateQueue;
 }
 
 // dispatch, 也是去接入更新机制，然后 scheduleUpdateOnFiber 触发更新
@@ -143,6 +230,7 @@ function updateState<State>(): [State, Dispatch<State>] {
 	// 计算新state的逻辑
 	const queue = hook.updateQueue as UpdateQueue<State>;
 	const pending = queue.shared.pending;
+	queue.shared.pending = null;
 
 	if (pending !== null) {
 		// pending 不为空，表示进行了setState（dispatchSetState中向pending插入了action Update）

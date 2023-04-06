@@ -8,7 +8,13 @@ function App() {
 	const arr = [<li>3</li>, <li>4</li>, <li>5</li>];
 
 	return (
-		<div>
+		<div
+			onClickCapture={() => {
+				setNum((num) => num + 1);
+				setNum((num) => num + 1);
+				setNum((num) => num + 1);
+			}}
+		>
 			<div>{num}</div>
 			<div>{num}</div>
 			<>

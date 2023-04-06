@@ -74,7 +74,7 @@ export class FiberRootNode {
 
 	// 如何知道哪些lane被消费，还剩哪些lane没被消费? 需要字段进行记录
 	pendingLanes: Lanes; // 代表所有未被消费的lane的集合
-	finishedLanes: Lane; // 代表本次更新消费的lane
+	finishedLane: Lane; // 代表本次更新消费的lane
 
 	constructor(container: Container, hostRootFiber: FiberNode) {
 		this.container = container;
@@ -83,7 +83,7 @@ export class FiberRootNode {
 		this.finishedWork = null;
 
 		this.pendingLanes = NoLanes;
-		this.finishedLanes = NoLanes;
+		this.finishedLane = NoLanes;
 	}
 }
 

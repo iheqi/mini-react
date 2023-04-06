@@ -17,20 +17,21 @@ import {
 } from './workTags';
 import { reconcileChildFibers, mountChildFibers } from './childFibers';
 import { renderWithHooks } from './fiberHooks';
+import { Lane } from './fiberLanes';
 
 // 递归中的递阶段，寻找和处理子fiberNode
-export const beginWork = (wip: FiberNode) => {
+export const beginWork = (wip: FiberNode, renderLane: Lane) => {
 	// 子fiberNode
 
 	switch (wip.tag) {
 		case HostRoot: // 根节点
-			return updateHostRoot(wip);
+			return updateHostRoot(wip, renderLane);
 		case HostComponent:
 			return updateHostComponent(wip);
 		case HostText: // HostText没有beginWork工作流程（因为他没有子节点)
 			return null;
 		case FunctionComponent:
-			return updateFunctionComponent(wip);
+			return updateFunctionComponent(wip, renderLane);
 		case Fragment:
 			return updateFragment(wip);
 		default:
@@ -47,14 +48,14 @@ export const beginWork = (wip: FiberNode) => {
 // 1.计算状态的最新值
 // 2.创建子fiberNode
 
-function updateHostRoot(wip: FiberNode) {
+function updateHostRoot(wip: FiberNode, renderLane: Lane) {
 	const baseState = wip.memoizedState;
 	const updateQueue = wip.updateQueue as UpdateQueue<Element>;
 	const pending = updateQueue.shared.pending;
 	updateQueue.shared.pending = null;
 
 	// 1.计算状态的最新值（同时也是消费update）
-	const { memoizedState } = processUpdateQueue(baseState, pending);
+	const { memoizedState } = processUpdateQueue(baseState, pending, renderLane);
 	wip.memoizedState = memoizedState; // 对于HostRoot，memoizedState 为 App element
 
 	// 2.创建子fiberNode
@@ -75,8 +76,8 @@ function updateHostComponent(wip: FiberNode) {
 	return wip.child;
 }
 
-function updateFunctionComponent(wip: FiberNode) {
-	const nextChildren = renderWithHooks(wip); // 对于函数组件，其children为函数的执行返回结果
+function updateFunctionComponent(wip: FiberNode, renderLane: Lane) {
+	const nextChildren = renderWithHooks(wip, renderLane); // 对于函数组件，其children为函数的执行返回结果
 	reconcileChildren(wip, nextChildren);
 	return wip.child;
 }

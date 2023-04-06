@@ -9,15 +9,18 @@ import {
 	NoLane,
 	SyncLane,
 	getHighestPriorityLane,
+	markRootFinished,
 	mergeLanes
 } from './fiberLanes';
 import { addScheduleSyncCallback, flushSyncCallbacks } from './syncTaskQueue';
 import { HostRoot } from './workTags';
 
 let workInProgress: FiberNode | null = null; // 当前工作的 fiber
+let wipRootRenderLane: Lane = NoLane; // 当前工作的lane
 
-function prepareRefreshStack(root: FiberRootNode) {
+function prepareRefreshStack(root: FiberRootNode, lane: Lane) {
 	workInProgress = createWorkInProgress(root.current, {});
+	wipRootRenderLane = lane;
 }
 
 // 调度功能
@@ -76,7 +79,7 @@ function markUpdateFromToRoot(fiber: FiberNode) {
 }
 
 // render阶段
-function renderRoot(root: FiberRootNode) {
+function renderRoot(root: FiberRootNode, lane: Lane) {
 	// 这里说ensureRootIsScheduled只调度了优先级最高的lane，那后续lane如何再继续执行？
 	// renderRoot会继续调用 ensureRootIsScheduled（那这逻辑也应该放到最后啊。。。不然当前微任务都还没执行，说的啥玩意啊）
 	const nextLane = getHighestPriorityLane(root.pendingLanes);
@@ -87,8 +90,12 @@ function renderRoot(root: FiberRootNode) {
 		return;
 	}
 
+	if (__DEV__) {
+		console.warn('render阶段开始');
+	}
+
 	// 初始化
-	prepareRefreshStack(root);
+	prepareRefreshStack(root, lane);
 
 	do {
 		try {
@@ -105,6 +112,8 @@ function renderRoot(root: FiberRootNode) {
 	// 完成 wip fiber 树的构建后，进行 commitRoot
 	const finishedWork = root.current.alternate;
 	root.finishedWork = finishedWork;
+	root.finishedLane = lane;
+	wipRootRenderLane = NoLane;
 
 	// wip fiberNode树，树中的Flags
 	// commit阶段
@@ -125,9 +134,17 @@ function commitRoot(root: FiberRootNode) {
 	if (__DEV__) {
 		console.warn('commit阶段开始', finishedWork);
 	}
+	const lane = root.finishedLane;
+
+	if (lane === NoLane && __DEV__) {
+		console.error('commit阶段finishedLane不应该是NoLane');
+	}
 
 	// 重置
 	root.finishedWork = null;
+	root.finishedLane = NoLane;
+
+	markRootFinished(root, lane);
 
 	const subtreeHasEffect =
 		(finishedWork.subtreeFlags & MutationMask) !== NoFlags;
@@ -152,7 +169,7 @@ function workLoop() {
 }
 
 function performUnitWork(fiber: FiberNode) {
-	const next = beginWork(fiber); // beginWork: 返回 子fiber 或 null（没有子节点了）
+	const next = beginWork(fiber, wipRootRenderLane); // beginWork: 返回 子fiber 或 null（没有子节点了）
 
 	fiber.memoizedProps = fiber.pendingProps;
 

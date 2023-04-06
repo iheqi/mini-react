@@ -69,10 +69,11 @@ export const enqueueUpdate = <State>(
 	updateQueue.shared.pending = update;
 };
 
-// 消费Update
+// 消费Update，update现在是一条链表，需要遍历
 export const processUpdateQueue = <State>(
 	baseState: State,
-	pendingUpdate: Update<State> | null // 待消费的 update
+	pendingUpdate: Update<State> | null, // 待消费的 update
+	renderLane: Lane
 ): {
 	memoizedState: State;
 } => {
@@ -81,16 +82,24 @@ export const processUpdateQueue = <State>(
 	};
 
 	if (pendingUpdate !== null) {
-		const action = pendingUpdate.action;
+		const first = pendingUpdate.next;
+		const pending = pendingUpdate.next as Update<any>;
+		// pending = c -> a -> b -> c 的执行流程: a -> b -> c
+		do {
+			if (pending.lane === renderLane) {
+				const action = pending.action;
 
-		if (action instanceof Function) {
-			// baseState 1 update (x) => 4x -> memoizedState 4
-			result.memoizedState = action(baseState);
-		} else {
-			// baseState 1 update 2 -> memoizedState 2
-			result.memoizedState = action;
-		}
+				if (action instanceof Function) {
+					// baseState 1 update (x) => 4x -> memoizedState 4
+					baseState = action(baseState);
+				} else {
+					// baseState 1 update 2 -> memoizedState 2
+					baseState = action;
+				}
+			}
+		} while (pending !== first);
 	}
+	result.memoizedState = baseState;
 
 	return result; // 返回新state结果对象
 };

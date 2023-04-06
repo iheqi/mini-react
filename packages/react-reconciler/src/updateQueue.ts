@@ -83,7 +83,7 @@ export const processUpdateQueue = <State>(
 
 	if (pendingUpdate !== null) {
 		const first = pendingUpdate.next;
-		const pending = pendingUpdate.next as Update<any>;
+		let pending = pendingUpdate.next as Update<any>;
 		// pending = c -> a -> b -> c 的执行流程: a -> b -> c
 		do {
 			if (pending.lane === renderLane) {
@@ -97,6 +97,7 @@ export const processUpdateQueue = <State>(
 					baseState = action;
 				}
 			}
+			pending = pending.next as Update<any>;
 		} while (pending !== first);
 	}
 	result.memoizedState = baseState;

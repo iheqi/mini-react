@@ -76,7 +76,6 @@ function commitMutationEffectsOnFiber(finishedWork: FiberNode) {
 				commitDeletion(childToDelete);
 			});
 		}
-		commitUpdate(finishedWork);
 		finishedWork.flags &= ~ChildDeletion;
 	}
 }
@@ -181,15 +180,14 @@ function commitDeletion(childToDelete: FiberNode) {
 	commitNestedComponent(childToDelete, (unmountFiber) => {
 		switch (unmountFiber.tag) {
 			case HostComponent: // 对于HostComponent，需要解绑ref
-				if (rootChildrenToDelete === null) {
-					recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber);
-				}
-				break;
+				recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber);
+				return;
 			case HostText:
 				recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber);
-				break;
+				return;
 			case FunctionComponent:
-				break;
+				// TODO useEffect unmount 、解绑ref
+				return;
 			default:
 				if (__DEV__) {
 					console.warn('未处理的unmount类型', unmountFiber);

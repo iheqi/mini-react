@@ -10,6 +10,7 @@ import {
 import { Flags, NoFlags } from './fiberFlags';
 import { Container } from 'hostConfig';
 import { Lane, Lanes, NoLanes } from './fiberLanes';
+import { Effect } from './fiberHooks';
 
 export class FiberNode {
 	type: any;
@@ -62,6 +63,12 @@ export class FiberNode {
 	}
 }
 
+// 收集effect回调函数，mount时不算effect？
+export interface pendingPassiveEffects {
+	unmount: Effect[];
+	update: Effect[];
+}
+
 // const root = ReactDOM.createRoot(document.getElementById('root'));
 // root.render(<App />);
 
@@ -75,6 +82,7 @@ export class FiberRootNode {
 	// 如何知道哪些lane被消费，还剩哪些lane没被消费? 需要字段进行记录
 	pendingLanes: Lanes; // 代表所有未被消费的lane的集合
 	finishedLane: Lane; // 代表本次更新消费的lane
+	pendingPassiveEffects: pendingPassiveEffects; // 收集effect回调函数
 
 	constructor(container: Container, hostRootFiber: FiberNode) {
 		this.container = container;
@@ -84,6 +92,11 @@ export class FiberRootNode {
 
 		this.pendingLanes = NoLanes;
 		this.finishedLane = NoLanes;
+
+		this.pendingPassiveEffects = {
+			unmount: [],
+			update: []
+		};
 	}
 }
 

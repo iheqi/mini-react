@@ -29,11 +29,18 @@ interface Hook {
 type EffectCallback = () => void;
 type EffectDeps = any[] | null;
 
-// 回调函数
+// 例如:
+// useEffect(() => {
+// 	console.log('num change create', num);
+// 	return () => {
+// 		console.log('num change destroy', num);
+// 	}
+// }, [num]);
+
 export interface Effect {
 	tag: Flags; // hookEffectTag
-	create: EffectCallback | void;
-	destroy: EffectCallback | void;
+	create: EffectCallback | void; // 为整个回调函数
+	destroy: EffectCallback | void; // create return的函数
 	deps: EffectDeps; // 依赖数组
 	// mountWorkInProgressHook已经会链接hook了，但这里是将effect的hook里的effect单独也链接成effect链表，方便遍历effect
 	next: Effect | null;
@@ -55,7 +62,10 @@ let renderLane: Lane = NoLane;
 export function renderWithHooks(wip: FiberNode, lane: Lane) {
 	// 赋值操作
 	currentlyRenderingFiber = wip;
-	wip.memoizedState = null; // 初始化，收集hook
+	// 重置hook链表
+	wip.memoizedState = null;
+	// 重置effect链表
+	wip.updateQueue = null;
 	renderLane = lane;
 	// 根据 wip.alternate 判断在何种状态
 	// 操作数据共享层，确定Hooks集合
@@ -113,10 +123,7 @@ function mountState<State>(
 	return [memoizedState, dispatch];
 }
 
-function mountEffect<State>(
-	create: EffectCallback | void,
-	deps: EffectDeps | void
-) {
+function mountEffect(create: EffectCallback | void, deps: EffectDeps | void) {
 	// 找到当前useState对应的Hook数据, mount时则是创建hook数据
 	const hook = mountWorkInProgressHook();
 
@@ -220,7 +227,8 @@ function mountWorkInProgressHook(): Hook {
 //**** Update 时 Hooks集合 ****/
 //**** Update 时 Hooks集合 ****/
 const HooksDispatcherOnUpdate: Dispatcher = {
-	useState: updateState
+	useState: updateState,
+	useEffect: updateEffect
 };
 
 // update 时的 useState
@@ -244,6 +252,51 @@ function updateState<State>(): [State, Dispatch<State>] {
 	}
 
 	return [hook.memorizedState, queue.dispatch as Dispatch<State>];
+}
+
+// update 时的 useEffect
+function updateEffect(create: EffectCallback | void, deps: EffectDeps | void) {
+	// 找到当前useState对应的Hook数据, mount时则是创建hook数据
+	const hook = updateWorkInProgressHook();
+	const nextDeps = deps === undefined ? null : deps;
+	let destroy: EffectCallback | void;
+
+	if (currentHook !== null) {
+		const prevEffect = currentHook.memorizedState as Effect;
+		destroy = prevEffect.destroy;
+
+		if (nextDeps !== null) {
+			// 浅比较依赖
+			const prevDeps = prevEffect.deps;
+			if (areHookInputsEqual(nextDeps, prevDeps)) {
+				// 如果依赖数组相等，effect还是会push（要保证链表顺序），但没有 HookHasEffect标志，后续不会执行
+				hook.memorizedState = pushEffect(Passive, create, destroy, nextDeps);
+				return;
+			}
+		}
+		// 浅比较 不相等，有 HookHasEffect
+		(currentlyRenderingFiber as FiberNode).flags |= PassiveEffect;
+		hook.memorizedState = pushEffect(
+			Passive | HookHasEffect,
+			create,
+			destroy,
+			nextDeps
+		);
+	}
+}
+
+function areHookInputsEqual(nextDeps: EffectDeps, prevDeps: EffectDeps) {
+	// 就是没有传依赖数组，每次都会触发
+	if (prevDeps === null || nextDeps === null) {
+		return false;
+	}
+	for (let i = 0; i < prevDeps.length && i < nextDeps.length; i++) {
+		if (Object.is(prevDeps[i], nextDeps[i])) {
+			continue;
+		}
+		return false;
+	}
+	return true;
 }
 
 // hook 数据保存在 fiber 中, 从 fiber 获取 Hook 数据

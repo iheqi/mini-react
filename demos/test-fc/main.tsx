@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 
 function App() {
@@ -48,10 +48,46 @@ function App() {
 	// );
 }
 
+// function Child() {
+// 	return <div>mini react</div>;
+// }
+
+// mount时输出：
+// Child mount
+// App mount
+// num change create 0
+
+// 点击update时
+// Child unmount
+// num change destroy 0
+// num change create 1
+function TestUseEffect() {
+	const [num, updateNum] = useState(0);
+	useEffect(() => {
+		console.log('App mount');
+	}, []);
+	useEffect(() => {
+		console.log('num change create', num);
+		return () => {
+			console.log('num change destroy', num);
+		};
+	}, [num]);
+
+	return (
+		<div onClick={() => updateNum(num + 1)}>
+			{num === 0 ? <Child /> : 'noop'}
+		</div>
+	);
+}
+
 function Child() {
-	return <div>mini react</div>;
+	useEffect(() => {
+		console.log('Child mount');
+		return () => console.log('Child unmount');
+	});
+	return 'i am child';
 }
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-	<App />
+	<TestUseEffect />
 );

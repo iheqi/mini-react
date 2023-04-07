@@ -48,7 +48,7 @@ export function scheduleUpdateOnFiber(fiber: FiberNode, lane: Lane) {
 	const root = markUpdateFromToRoot(fiber);
 	markRootUpdate(root, lane);
 
-	// renderRoot(root); // 之前是同步执行，改为按优先级调度执行
+	// renderRoot(root); // 之前是同步执行，改为按优先级异步调度执行
 	ensureRootIsScheduled(root);
 }
 

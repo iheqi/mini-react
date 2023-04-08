@@ -9,8 +9,9 @@ import {
 } from './workTags';
 import { Flags, NoFlags } from './fiberFlags';
 import { Container } from 'hostConfig';
-import { Lane, Lanes, NoLanes } from './fiberLanes';
+import { Lane, Lanes, NoLane, NoLanes } from './fiberLanes';
 import { Effect } from './fiberHooks';
+import { CallbackNode } from 'scheduler';
 
 export class FiberNode {
 	type: any;
@@ -84,6 +85,8 @@ export class FiberRootNode {
 	finishedLane: Lane; // 代表本次更新消费的lane
 	pendingPassiveEffects: pendingPassiveEffects; // 收集effect回调函数
 
+	callbackNode: CallbackNode | null;
+	callbackPriority: Lane;
 	constructor(container: Container, hostRootFiber: FiberNode) {
 		this.container = container;
 		this.current = hostRootFiber;
@@ -92,6 +95,9 @@ export class FiberRootNode {
 
 		this.pendingLanes = NoLanes;
 		this.finishedLane = NoLanes;
+
+		this.callbackNode = null;
+		this.callbackPriority = NoLane;
 
 		this.pendingPassiveEffects = {
 			unmount: [],

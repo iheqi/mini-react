@@ -40,6 +40,11 @@ export function getHighestPriorityLane(lanes: Lanes): Lane {
 	return lanes & -lanes;
 }
 
+// 比较「优先级是否足够」为什么不 lane 数值大小的直接比较 ？？？
+export function isSubsetOfLanes(set: Lanes, subset: Lane) {
+	return (set & subset) === subset;
+}
+
 export function markRootFinished(root: FiberRootNode, lane: Lane) {
 	root.pendingLanes &= ~lane;
 }

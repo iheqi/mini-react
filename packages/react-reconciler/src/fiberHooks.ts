@@ -11,7 +11,7 @@ import {
 } from './updateQueue';
 import { Action } from 'shared/ReactTypes';
 import { scheduleUpdateOnFiber } from './workLoop';
-import { Lane, NoLane, requestUpdateLanes } from './fiberLanes';
+import { Lane, NoLane, requestUpdateLane } from './fiberLanes';
 import { Flags, PassiveEffect } from './fiberFlags';
 import { HookHasEffect, Passive } from './hookEffectTags';
 
@@ -193,7 +193,7 @@ function dispatchSetState<State>(
 	updateQueue: UpdateQueue<State>,
 	action: Action<State>
 ) {
-	const lane = requestUpdateLanes();
+	const lane = requestUpdateLane();
 	const update = createUpdate(action, lane);
 	enqueueUpdate(updateQueue, update); // 插入action
 	scheduleUpdateOnFiber(fiber, lane); // 开始render和commit

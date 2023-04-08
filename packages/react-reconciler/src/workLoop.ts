@@ -51,7 +51,8 @@ function prepareRefreshStack(root: FiberRootNode, lane: Lane) {
 // 调度功能
 // 有update操作就会调用 scheduleUpdateOnFiber，开启render和commit，即使没有DOM的更改。（太搞笑了）
 
-// scheduleUpdateOnFiber => renderRoot => workLoop => performUnitWork => beginWork => completeWork
+// scheduleUpdateOnFiber => ensureRootIsScheduled（performSyncWorkOnRoot || performConcurrentWorkOnRoot）
+// => (workLoop || workLoopConcurrent) => performUnitWork => beginWork => completeWork
 // 完成 wip fiber 树的构建后进行 commitRoot
 
 export function scheduleUpdateOnFiber(fiber: FiberNode, lane: Lane) {
@@ -60,7 +61,7 @@ export function scheduleUpdateOnFiber(fiber: FiberNode, lane: Lane) {
 	const root = markUpdateFromToRoot(fiber);
 	markRootUpdate(root, lane);
 
-	// renderRoot(root); // 之前是同步执行，改为按优先级异步调度执行
+	// performSyncWorkOnRoot(root); // 之前是同步执行，改为按优先级异步调度执行
 	ensureRootIsScheduled(root);
 }
 
@@ -79,7 +80,8 @@ function ensureRootIsScheduled(root: FiberRootNode) {
 			console.log('在微任务中调度，优先级:', updateLane);
 		}
 
-		addScheduleSyncCallback(renderRoot.bind(null, root, updateLane));
+		// [performSyncWorkOnRoot, performSyncWorkOnRoot, performSyncWorkOnRoot]
+		addScheduleSyncCallback(performSyncWorkOnRoot.bind(null, root, updateLane));
 		scheduleMicroTask(flushSyncCallbacks);
 	} else {
 		// 其他优先级，用宏任务调用
@@ -113,8 +115,8 @@ function markUpdateFromToRoot(fiber: FiberNode) {
 	return null;
 }
 
-// render阶段
-function renderRoot(root: FiberRootNode, lane: Lane) {
+// 同步render
+function performSyncWorkOnRoot(root: FiberRootNode, lane: Lane) {
 	// 这里说ensureRootIsScheduled只调度了优先级最高的lane，那后续lane如何再继续执行？
 	// renderRoot会继续调用 ensureRootIsScheduled（那这逻辑也应该放到最后啊。。。不然当前微任务都还没执行，说的啥玩意啊）
 	const nextLane = getHighestPriorityLane(root.pendingLanes);
@@ -155,7 +157,27 @@ function renderRoot(root: FiberRootNode, lane: Lane) {
 	commitRoot(root);
 }
 
-function renderRootNew(
+// 异步可中断的 Concurrent
+function performConcurrentWorkOnRoot(root: FiberRootNode, didTimeout: boolean) {
+	const lane = getHighestPriorityLane(root.pendingLanes);
+
+	if (lane === NoLane) {
+		return null;
+	}
+	// 完成 wip fiber 树的构建后，进行 commitRoot
+	const finishedWork = root.current.alternate;
+	root.finishedWork = finishedWork;
+	root.finishedLane = lane;
+	wipRootRenderLane = NoLane;
+
+	// wip fiberNode树，树中的Flags
+	// commit阶段
+	commitRoot(root);
+	const needSync = lane === SyncLane || didTimeout;
+}
+
+// performSyncWorkOnRoot 和 performConcurrentWorkOnRoot最后都要调用renderRoot
+function renderRoot(
 	root: FiberRootNode,
 	lane: Lane,
 	shouldTimeSlice: boolean
@@ -206,7 +228,6 @@ function workLoopConcurrent() {
 	}
 }
 
-// 同步的render
 function performUnitWork(fiber: FiberNode) {
 	const next = beginWork(fiber, wipRootRenderLane); // beginWork: 返回 子fiber 或 null（没有子节点了）
 
@@ -218,25 +239,6 @@ function performUnitWork(fiber: FiberNode) {
 	} else {
 		workInProgress = next; // 有子节点，遍历子节点
 	}
-}
-
-// 异步可中断的 Concurrent
-function performConcurrentWorkOnRoot(root: FiberRootNode, didTimeout: boolean) {
-	const lane = getHighestPriorityLane(root.pendingLanes);
-
-	if (lane === NoLane) {
-		return null;
-	}
-	// 完成 wip fiber 树的构建后，进行 commitRoot
-	const finishedWork = root.current.alternate;
-	root.finishedWork = finishedWork;
-	root.finishedLane = lane;
-	wipRootRenderLane = NoLane;
-
-	// wip fiberNode树，树中的Flags
-	// commit阶段
-	commitRoot(root);
-	const needSync = lane === SyncLane || didTimeout;
 }
 
 // - commit 阶段

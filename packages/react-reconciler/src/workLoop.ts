@@ -19,6 +19,7 @@ import {
 	NoLane,
 	SyncLane,
 	getHighestPriorityLane,
+	lanesToSchedulerPriority,
 	markRootFinished,
 	mergeLanes
 } from './fiberLanes';
@@ -27,13 +28,20 @@ import { HostRoot } from './workTags';
 
 import {
 	unstable_scheduleCallback as schedulerCallback,
-	unstable_NormalPriority as NormalPriority
+	unstable_NormalPriority as NormalPriority,
+	unstable_shouldYield
 } from 'scheduler';
 import { HookHasEffect, Passive } from './hookEffectTags';
 
 let workInProgress: FiberNode | null = null; // 当前工作的 fiber
 let wipRootRenderLane: Lane = NoLane; // 当前工作的lane
 let rootDoseHasPassiveEffects = false;
+
+type RootExitStatus = number;
+// render中断
+const RootInComplete = 1;
+// render完成
+const RootCompleted = 2;
 
 function prepareRefreshStack(root: FiberRootNode, lane: Lane) {
 	workInProgress = createWorkInProgress(root.current, {});
@@ -42,6 +50,10 @@ function prepareRefreshStack(root: FiberRootNode, lane: Lane) {
 
 // 调度功能
 // 有update操作就会调用 scheduleUpdateOnFiber，开启render和commit，即使没有DOM的更改。（太搞笑了）
+
+// scheduleUpdateOnFiber => renderRoot => workLoop => performUnitWork => beginWork => completeWork
+// 完成 wip fiber 树的构建后进行 commitRoot
+
 export function scheduleUpdateOnFiber(fiber: FiberNode, lane: Lane) {
 	// 传进来的fiber可能是子节点，需要向上寻找到 FiberRoot 再进行调度
 	// （为什么每次都要寻找，将 FiberRoot 保存为全局变量不行吗）
@@ -71,6 +83,12 @@ function ensureRootIsScheduled(root: FiberRootNode) {
 		scheduleMicroTask(flushSyncCallbacks);
 	} else {
 		// 其他优先级，用宏任务调用
+		const schedulerPriority = lanesToSchedulerPriority(updateLane);
+		schedulerCallback(
+			schedulerPriority,
+			// @ts-ignore
+			performConcurrentWorkOnRoot.bind(null, root)
+		);
 	}
 }
 
@@ -135,6 +153,90 @@ function renderRoot(root: FiberRootNode, lane: Lane) {
 	// wip fiberNode树，树中的Flags
 	// commit阶段
 	commitRoot(root);
+}
+
+function renderRootNew(
+	root: FiberRootNode,
+	lane: Lane,
+	shouldTimeSlice: boolean
+): RootExitStatus {
+	if (__DEV__) {
+		console.warn('render阶段开始');
+		console.log(`开始${shouldTimeSlice ? '并发' : '同步'}render阶段`, root);
+	}
+
+	// 初始化，如果是中断继续执行，wipRootRenderLane === lane，无需再初始化
+	if (wipRootRenderLane !== lane) {
+		prepareRefreshStack(root, lane);
+	}
+
+	do {
+		try {
+			shouldTimeSlice ? workLoopConcurrent() : workLoop();
+			break;
+		} catch (error) {
+			if (__DEV__) {
+				console.warn('workLoop发生错误', error);
+			}
+			workInProgress = null;
+		}
+	} while (true);
+
+	// workLoopConcurrent被中断后继续执行
+	if (shouldTimeSlice && workInProgress !== null) {
+		return RootInComplete;
+	}
+	// workLoop 或 workLoopConcurrent 执行完成
+
+	if (!shouldTimeSlice && workInProgress !== null && __DEV__) {
+		console.error('render阶段结束时wip应该为null');
+	}
+	return RootCompleted;
+}
+
+function workLoop() {
+	while (workInProgress !== null) {
+		performUnitWork(workInProgress);
+	}
+}
+
+function workLoopConcurrent() {
+	while (workInProgress !== null && !unstable_shouldYield()) {
+		performUnitWork(workInProgress);
+	}
+}
+
+// 同步的render
+function performUnitWork(fiber: FiberNode) {
+	const next = beginWork(fiber, wipRootRenderLane); // beginWork: 返回 子fiber 或 null（没有子节点了）
+
+	fiber.memoizedProps = fiber.pendingProps;
+
+	if (next === null) {
+		// completeWork: 如果没有子节点，则遍历兄弟节点和父节点
+		completeUnitWork(fiber);
+	} else {
+		workInProgress = next; // 有子节点，遍历子节点
+	}
+}
+
+// 异步可中断的 Concurrent
+function performConcurrentWorkOnRoot(root: FiberRootNode, didTimeout: boolean) {
+	const lane = getHighestPriorityLane(root.pendingLanes);
+
+	if (lane === NoLane) {
+		return null;
+	}
+	// 完成 wip fiber 树的构建后，进行 commitRoot
+	const finishedWork = root.current.alternate;
+	root.finishedWork = finishedWork;
+	root.finishedLane = lane;
+	wipRootRenderLane = NoLane;
+
+	// wip fiberNode树，树中的Flags
+	// commit阶段
+	commitRoot(root);
+	const needSync = lane === SyncLane || didTimeout;
 }
 
 // - commit 阶段
@@ -215,25 +317,6 @@ function flushPassiveEffects(pendingPassiveEffects: pendingPassiveEffects) {
 	});
 	pendingPassiveEffects.update = [];
 	flushSyncCallbacks();
-}
-
-function workLoop() {
-	while (workInProgress !== null) {
-		performUnitWork(workInProgress);
-	}
-}
-
-function performUnitWork(fiber: FiberNode) {
-	const next = beginWork(fiber, wipRootRenderLane); // beginWork: 返回 子fiber 或 null（没有子节点了）
-
-	fiber.memoizedProps = fiber.pendingProps;
-
-	if (next === null) {
-		// completeWork: 如果没有子节点，则遍历兄弟节点和父节点
-		completeUnitWork(fiber);
-	} else {
-		workInProgress = next; // 有子节点，遍历子节点
-	}
 }
 
 function completeUnitWork(fiber: FiberNode) {

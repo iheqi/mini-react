@@ -110,7 +110,7 @@ export const processUpdateQueue = <State>(
 		// pending = c -> a -> b -> c 的执行流程: a -> b -> c
 		do {
 			if (!isSubsetOfLanes(renderLane, pending.lane)) {
-				// 优先级不够，被跳过
+				// 优先级不够，被跳过。放到下一次schedule
 				const clone = createUpdate(pending.action, pending.lane);
 
 				// 3. 如果本次更新有update被跳过，则本次更新计算出的	memoizedState为「考虑优先级」情况下计算的结果，
